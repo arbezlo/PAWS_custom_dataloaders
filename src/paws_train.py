@@ -416,7 +416,7 @@ def load_checkpoint(
     encoder,
     opt,
     scaler,
-    new,
+    new=False,
     use_fp16=False
 ):
     checkpoint = torch.load(r_path, map_location='cpu')

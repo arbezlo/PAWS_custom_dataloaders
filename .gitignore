@@ -5,3 +5,4 @@ datasets
 *.pdf
 *.ipynb
 configs/*
+env/docker

@@ -17,11 +17,12 @@ from math import ceil
 
 import torch
 
-from pudb import forked
 
 import torchvision.transforms as transforms
 import torchvision
-
+import pandas as pd
+import json
+from src.custom_generator import DatasetDataframe, Crop
 import PIL
 from PIL import Image
 from PIL import ImageFilter
@@ -32,6 +33,7 @@ logger = getLogger()
 
 def init_data(
     dataset_name,
+    subset_path,
     transform,
     init_transform,
     u_batch_size,
@@ -139,6 +141,7 @@ def init_data(
     if dataset_name == 'clustervec':
         return _init_clustervec_data(
             transform=transform,
+            subset_path=subset_path,
             init_transform=init_transform,
             u_batch_size=u_batch_size,
             s_batch_size=s_batch_size,
@@ -157,6 +160,7 @@ def init_data(
         batch_size = s_batch_size
         return _init_clustervec_ft_data(
             transform=transform,
+            subset_path=subset_path,
             init_transform=init_transform,
             batch_size=batch_size,
             stratify=stratify,
@@ -465,6 +469,7 @@ def _init_clustervec_ft_data(
     logger.info('ClusterVec fine-tune dataset created')
     dataset = TransClusterVec(
         dataset=imagenet,
+        root='/'.join((root_path,image_folder)),
         supervised=True,
         init_transform=init_transform,
         seed=_GLOBAL_SEED)
@@ -480,7 +485,7 @@ def _init_clustervec_ft_data(
             batch_size=batch_size,
             drop_last=drop_last,
             pin_memory=True,
-            num_workers=8)
+            num_workers=1)
     else:
         dist_sampler = ClassStratifiedSampler(
             data_source=dataset,
@@ -494,13 +499,14 @@ def _init_clustervec_ft_data(
             dataset,
             batch_sampler=dist_sampler,
             pin_memory=True,
-            num_workers=8)
+            num_workers=1)
 
     return (data_loader, dist_sampler)
 
 
 def _init_clustervec_data(
     transform,
+    subset_path,
     init_transform,
     u_batch_size,
     s_batch_size,
@@ -519,6 +525,7 @@ def _init_clustervec_data(
 ):
     clustervec = ClusterVec(
         root=root_path,
+        subset_path=subset_path,
         image_folder=image_folder,
         tar_folder=tar_folder,
         tar_file=tar_file,
@@ -528,6 +535,7 @@ def _init_clustervec_data(
     logger.info('ClusterVec dataset created')
     unsupervised_set = TransClusterVec(
         dataset=clustervec,
+        root= '/'.join((root_path, image_folder)),
         supervised=False,
         init_transform=init_transform,
         multicrop_transform=multicrop_transform,
@@ -544,12 +552,14 @@ def _init_clustervec_data(
         pin_memory=True,
         num_workers=8)#changed_numworkers
     logger.info('ClusterVec unsupervised data loader created')
-
+    #forked.set_trace()
     supervised_sampler, supervised_loader = None, None
     if classes_per_batch > 0 and s_batch_size > 0:
         logger.info('Making supervised ClusterVec data loader...')
+        #from pudb import forked; forked.set_trace()
         supervised_set = TransClusterVec(
             dataset=clustervec,
+            root="/".join((root_path, image_folder)),
             supervised=True,
             supervised_views=supervised_views,
             init_transform=init_transform,
@@ -649,9 +659,9 @@ def make_transforms(
         #forked.set_trace()
         if subset_path is not None:
             if unlabeled_frac >= 0:
-                keep_file = os.path.join(subset_path, f'{int(unlabeled_frac* 100)}percent.txt')
+                keep_file = os.path.join(subset_path, f'{int(unlabeled_frac* 100)}percent.csv')
             else:
-                keep_file = os.path.join(subset_path, 'val.txt')
+                keep_file = os.path.join(subset_path, 'val.csv')
             logger.info(f'keep file: {keep_file}')
 
         return _make_clustervec_transforms(
@@ -903,16 +913,12 @@ def _make_clustervec_transforms(
 
         if training and (keep_file is not None) and os.path.exists(keep_file):
             logger.info(f'Using {keep_file}')
-            with open(keep_file, 'r') as rfile:
-                for line in rfile:
-                    class_name = line.split('_')[:-1] #TODO change class_name method/function
-                    class_name = "_".join(class_name)
-                    target = class_to_idx[class_name]
-                    img = line.split('\n')[0]
-                    new_samples.append(
-                        (os.path.join(root, class_name, img),
-                         target))
-                    new_targets.append(target)
+
+            df = pd.read_csv(keep_file)
+            rfile = list(zip(df['img_path'],df['target'],df[['x1','y1','x2','y2']].values.tolist()))
+            for line in rfile:
+                new_samples.append(line)
+                new_targets.append(line[1])
         else:
             logger.info('flipping coin to keep labels')
             g = torch.Generator()
@@ -920,7 +926,7 @@ def _make_clustervec_transforms(
             for sample in samples:
                 if torch.bernoulli(torch.tensor(unlabel_prob), generator=g) == 0:
                     target = sample[1]
-                    new_samples.append((sample[0], target))
+                    new_samples.append(sample)
                     new_targets.append(target)
         return np.array(new_targets), np.array(new_samples)
 
@@ -1096,7 +1102,7 @@ class ClassStratifiedSampler(torch.utils.data.Sampler):
         """
         super(ClassStratifiedSampler, self).__init__(data_source)
         self.data_source = data_source
-
+        #forked.set_trace()
         self.rank = rank
         self.world_size = world_size
         self.cpb = classes_per_batch
@@ -1173,6 +1179,7 @@ class ClassStratifiedSampler(torch.utils.data.Sampler):
         return zip(*subsampled_samplers)
 
     def __iter__(self):
+        #forked.set_trace()
         self._ssi = self.rank*self.cpb if self.unique_cpb else 0
         self._next_perm()
         
@@ -1276,11 +1283,12 @@ class TransImageNet(ImageNet):
         return multiple transformed copies of the same image in each call
         to __getitem__
         """
+        
         self.dataset = dataset
         self.supervised = supervised
         self.supervised_views = supervised_views
         self.multicrop_transform = multicrop_transform
-        self.targets, self.samples = dataset.targets, dataset.samples
+        self.targets, self.samples = dataset.targets.astype(int), dataset.samples
         if self.supervised:
             self.targets, self.samples = init_transform(
                 dataset.root,
@@ -1536,21 +1544,24 @@ class GaussianBlur(object):
 ################################## CUSTOM DATALOADER CLASS ##############################################
 
 
-class ClusterVec(torchvision.datasets.ImageFolder):
+class ClusterVec(DatasetDataframe):
 
     def __init__(
         self,
         root,
+        subset_path,
         image_folder='imagenet_full_size/061417/',
-        tar_folder='imagenet_full_size/',
-        tar_file='imagenet_full_size-061417.tar',
         train=True,
         transform=None,
         target_transform=None,
         job_id=None,
         local_rank=None,
-        copy_data=True
+        tar_folder='imagenet_full_size/',
+        tar_file='imagenet_full_size-061417.tar',
+        copy_data=False
     ):
+        
+
         """
         ClusterVec
 
@@ -1565,37 +1576,47 @@ class ClusterVec(torchvision.datasets.ImageFolder):
         :param job_id: scheduler job-id used to create dir on local machine
         :param copy_data: whether to copy data from network file locally
         """
-
-        suffix = 'train/' if train else 'test/'
+        
+        if train: 
+            df_dir = os.path.join(subset_path, 'train.csv')
+        else:
+            df_dir = os.path.join(subset_path, 'val.csv')
+        
+        def get_class_to_idx(root):
+            with open(os.path.join(root,"idx_to_class.json")) as json_file:
+                data = json.load(json_file)
+            
+            return {v: k for k, v in data.items()}
+        
+        data = get_class_to_idx(subset_path)
+        self.class_to_idx = data
         data_path = None
-        if copy_data:
-            logger.info('copying data locally')
-            data_path = copy_imgnt_locally(
-                root=root,
-                suffix=suffix,
-                image_folder=image_folder,
-                tar_folder=tar_folder,
-                tar_file=tar_file,
-                job_id=job_id,
-                local_rank=local_rank)
-        if (not copy_data) or (data_path is None):
-            data_path = os.path.join(root, image_folder, suffix)
+        self.image_folder = image_folder
+        data_path = os.path.join(root, image_folder)
+        dataframe = pd.read_csv(df_dir,usecols=['img_path',  'x1', 'y1', 'x2', 'y2', 'score' ,'target'], index_col=False)
+        self.classes = list(data.keys()) #Careful with methods myboy
+        dataframe['target'] = dataframe['target'].astype(int)
         logger.info(f'data-path {data_path}')
 
         super(ClusterVec, self).__init__(
-            root=data_path,
+            data_path,
+            df=dataframe,
             transform=transform,
             target_transform=target_transform)
         logger.info('Initialized ClusterVec')
 
+        
     #TODO override the original getitem to get the image_class
 
 
 class TransClusterVec(ClusterVec):
 
+    
     def __init__(
         self,
         dataset,
+        root=None , 
+        image_path = None,
         supervised=False,
         supervised_views=1,
         init_transform=None,
@@ -1608,19 +1629,34 @@ class TransClusterVec(ClusterVec):
         return multiple transformed copies of the same image in each call
         to __getitem__
         """
+        
+
+        
         self.dataset = dataset
         self.supervised = supervised
         self.supervised_views = supervised_views
         self.multicrop_transform = multicrop_transform
         
+        
+        
+        self.targets, self.samples = dataset.target, dataset.samples
+        
+        if dataset is not None:
+            self.root_dir_img = root 
+        else :
+            self.root_dir_img = dataset.root_dir
 
-        self.targets, self.samples = dataset.targets, dataset.samples
+        self.image_folder = image_path
         if self.supervised:
             self.targets, self.samples = init_transform(
-                dataset.root,
+                dataset.root_dir,
                 dataset.samples,
                 dataset.class_to_idx,
                 seed)
+            
+            
+            self.targets = self.targets.astype(int)
+            
             logger.debug(f'num-labeled {len(self.samples)}')
             mint = None
             self.target_indices = []
@@ -1634,7 +1670,6 @@ class TransClusterVec(ClusterVec):
                     list_i = []
                     list_i.append(indices)
                     indices = list_i
-                    self.flag.append("Careful a singleton is in there "+str(t))
                 
                 self.target_indices.append(indices)
                 mint = len(indices) if mint is None else min(mint, len(indices))
@@ -1646,15 +1681,11 @@ class TransClusterVec(ClusterVec):
         return self.dataset.classes
 
     def __getitem__(self, index):
-        if self.supervised:
-            target = self.targets[index]
-            path = self.samples[index][0]
-            path = os.path.join(self.dataset.root,path.split(os.sep)[-2],path.split(os.sep)[-1].split('_')[-1])
-            img = self.dataset.loader(path)
-        else:
-            target = self.targets[index]
-            path = self.samples[index][0]
-            img = self.dataset.loader(path)
+        #from pudb import forked; forked.set_trace()
+        path, target, coords = self.samples[index] # coords [x1,y1,x2,y2]
+        full_path = '/'.join((self.root_dir_img, path))
+        img = self.dataset.loader(full_path)
+        img = img.crop(coords)
             
         if self.dataset.target_transform is not None:
             target = self.dataset.target_transform(target)
@@ -1793,6 +1824,7 @@ class ClusterVecSampler(ClassStratifiedSampler):
         ipe = (self.num_classes // self.cpb if not self.unique_cpb
                else self.num_classes // (self.cpb * self.world_size)) * self.batch_size
 
+        #from pudb import forked; forked.set_trace()
         for epoch in range(self.epochs):
 
             # -- shuffle class order

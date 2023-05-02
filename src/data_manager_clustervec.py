@@ -1593,8 +1593,8 @@ class ClusterVec(DatasetDataframe):
         data_path = None
         self.image_folder = image_folder
         data_path = os.path.join(root, image_folder)
-        dataframe = pd.read_csv(df_dir,usecols=['img_path',  'x1', 'y1', 'x2', 'y2', 'score' ,'target'], index_col=False)
-        self.classes = list(data.keys()) #Careful with methods myboy
+        dataframe = pd.read_csv(df_dir,usecols=['img_path',  'x1', 'y1', 'x2', 'y2','target'], index_col=False)
+        self.classes = list(data.keys()) 
         dataframe['target'] = dataframe['target'].astype(int)
         logger.info(f'data-path {data_path}')
 

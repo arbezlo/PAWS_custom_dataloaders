@@ -358,7 +358,10 @@ def main(args,run):
                             'itr':itr,
                             'paws-xent-loss': ploss_meter.avg,
                             'paws-me_max-reg': rloss_meter.avg,
-                            'time (ms)': time_meter.avg
+                            'time (ms)': time_meter.avg,
+                            "lr_avg": lr_stats.avg,
+                            "lr_min": lr_stats.min,
+                            'lr_max': lr_stats.max,
                             })
                 logger.info('[%d, %5d] loss: %.3f (%.3f %.3f) '
                             '(%d ms; %d ms)'

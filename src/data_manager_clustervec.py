@@ -213,7 +213,7 @@ def _init_cifar10_ft_data(
             batch_size=batch_size,
             drop_last=drop_last,
             pin_memory=True,
-            num_workers=8)
+            num_workers=7)
     else:
         dist_sampler = ClassStratifiedSampler(
             data_source=dataset,
@@ -227,7 +227,7 @@ def _init_cifar10_ft_data(
             dataset,
             batch_sampler=dist_sampler,
             pin_memory=True,
-            num_workers=8)
+            num_workers=7)
 
     return (data_loader, dist_sampler)
 
@@ -267,7 +267,7 @@ def _init_cifar10_data(
         batch_size=u_batch_size,
         drop_last=True,
         pin_memory=True,
-        num_workers=8)
+        num_workers=7)
 
     supervised_sampler, supervised_loader = None, None
     if classes_per_batch > 0 and s_batch_size > 0:
@@ -290,7 +290,7 @@ def _init_cifar10_data(
         supervised_loader = torch.utils.data.DataLoader(
             supervised_set,
             batch_sampler=supervised_sampler,
-            num_workers=8)
+            num_workers=7)
         if len(supervised_loader) > 0:
             tmp = ceil(len(unsupervised_loader) / len(supervised_loader))
             supervised_sampler.set_inner_epochs(tmp)
@@ -343,7 +343,7 @@ def _init_imgnt_data(
         batch_size=u_batch_size,
         drop_last=True,
         pin_memory=True,
-        num_workers=8)
+        num_workers=7)
     logger.info('ImageNet unsupervised data loader created')
 
     supervised_sampler, supervised_loader = None, None
@@ -367,7 +367,7 @@ def _init_imgnt_data(
             supervised_set,
             batch_sampler=supervised_sampler,
             pin_memory=True,
-            num_workers=8)
+            num_workers=7)
         if len(supervised_loader) > 0:
             tmp = ceil(len(unsupervised_loader) / len(supervised_loader))
             supervised_sampler.set_inner_epochs(tmp)
@@ -420,7 +420,7 @@ def _init_imgnt_ft_data(
             batch_size=batch_size,
             drop_last=drop_last,
             pin_memory=True,
-            num_workers=8)
+            num_workers=7)
     else:
         dist_sampler = ClassStratifiedSampler(
             data_source=dataset,
@@ -434,7 +434,7 @@ def _init_imgnt_ft_data(
             dataset,
             batch_sampler=dist_sampler,
             pin_memory=True,
-            num_workers=8)
+            num_workers=7)
 
     return (data_loader, dist_sampler)
 
@@ -485,7 +485,7 @@ def _init_clustervec_ft_data(
             batch_size=batch_size,
             drop_last=drop_last,
             pin_memory=True,
-            num_workers=1)
+            num_workers=7)
     else:
         dist_sampler = ClassStratifiedSampler(
             data_source=dataset,
@@ -499,7 +499,7 @@ def _init_clustervec_ft_data(
             dataset,
             batch_sampler=dist_sampler,
             pin_memory=True,
-            num_workers=1)
+            num_workers=7)
 
     return (data_loader, dist_sampler)
 
@@ -550,7 +550,7 @@ def _init_clustervec_data(
         batch_size=u_batch_size,
         drop_last=True,
         pin_memory=True,
-        num_workers=8)#changed_numworkers
+        num_workers=7)#changed_numworkers
     logger.info('ClusterVec unsupervised data loader created')
     #forked.set_trace()
     supervised_sampler, supervised_loader = None, None
@@ -576,7 +576,7 @@ def _init_clustervec_data(
             supervised_set,
             batch_sampler=supervised_sampler,
             pin_memory=True,
-            num_workers=8)#changed num_workers
+            num_workers=7)#changed num_workers
         if len(supervised_loader) > 0:
             tmp = ceil(len(unsupervised_loader) / len(supervised_loader))
             supervised_sampler.set_inner_epochs(tmp)
@@ -928,7 +928,7 @@ def _make_clustervec_transforms(
                     target = sample[1]
                     new_samples.append(sample)
                     new_targets.append(target)
-        return np.array(new_targets), np.array(new_samples)
+        return np.array(new_targets), new_samples
 
     return transform, init_transform
 

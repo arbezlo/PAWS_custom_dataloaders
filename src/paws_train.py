@@ -424,10 +424,10 @@ def load_checkpoint(
     epoch = checkpoint['epoch']
     #from pudb import forked; forked.set_trace()
     # -- loading encoder
-    if encoder.model_name == "resnet18":
-        encoder.load_state_dict(checkpoint['state_dict'], strict = False)
-    else:
-        encoder.load_state_dict(checkpoint['encoder'], strict = False)
+    #if encoder.model_name == "resnet18":
+    #    encoder.load_state_dict(checkpoint['state_dict'], strict = False)
+    #else:
+    encoder.load_state_dict(checkpoint['encoder'], strict = False)
     logger.info(f'loaded encoder from epoch {epoch}')
 
     # -- loading optimizer

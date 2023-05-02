@@ -126,6 +126,7 @@ def main(args,run):
     (data_loader,
      dist_sampler) = init_data(
          dataset_name=dataset_name,
+         subset_path=subset_path,
          transform=transform,
          init_transform=init_transform,
          u_batch_size=None,
@@ -153,6 +154,7 @@ def main(args,run):
     (val_data_loader,
      val_dist_sampler) = init_data(
          dataset_name=dataset_name,
+         subset_path=subset_path,
          transform=val_transform,
          init_transform=val_init_transform,
          u_batch_size=None,

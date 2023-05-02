@@ -443,6 +443,7 @@ def _init_imgnt_ft_data(
 #TODO create a _init_clustervec and clustervec_ft
 def _init_clustervec_ft_data(
     transform,
+    subset_path,
     init_transform,
     batch_size,
     stratify=False,
@@ -460,6 +461,7 @@ def _init_clustervec_ft_data(
 ):
     imagenet = ClusterVec(
         root=root_path,
+        subset_path=subset_path,
         image_folder=image_folder,
         tar_folder=tar_folder,
         tar_file=tar_file,

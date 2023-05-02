@@ -1,14 +1,14 @@
 data:
   data_seed: 152
   dataset: clustervec_fine_tune
-  image_folder: null
+  image_folder: anonym2open/
   normalize: true
   num_classes: 151
   root_path: /scratch2/clear/larbez/Workspace/datasets/clustervec-small/
-  subset_path: clustervec_subsets/
+  subset_path: /scratch2/clear/larbez/Workspace/datasets/clustervec-small/subsets
   unlabeled_frac: 0.9
 logging:
-  folder: /scratch2/clear/larbez/Workspace/PAWS/Test_new_dataloaders_bis/
+  folder: /scratch2/clear/larbez/Workspace/PAWS/Test_new_dataloaders_bisbis/
   pretrain_path: /scratch2/clear/larbez/Workspace/PAWS/pretrained_weights_paws/paws_imgnt_10percent_300ep.pth.tar
   write_tag: paws-latest
 meta:

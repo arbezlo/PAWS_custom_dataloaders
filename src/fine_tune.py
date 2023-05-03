@@ -103,7 +103,7 @@ def main(args,run):
 
     # -- optimization/evaluation params
     if training:
-        batch_size = 128
+        batch_size = 64
     else:
         batch_size = 16
         unlabeled_frac = 0.0
@@ -215,7 +215,7 @@ def main(args,run):
                 with torch.cuda.amp.autocast(enabled=use_fp16):
                     inputs, labels = data[0].to(device), data[1].to(device)
                     outputs = encoder(inputs)
-                    loss = criterion(outputs, labels)
+                    loss = criterion(outputs, labels.long())
                 total += inputs.shape[0]
                 top5_correct += float(outputs.topk(5, dim=1).indices.eq(labels.unsqueeze(1)).sum())
                 top1_correct += float(outputs.max(dim=1).indices.eq(labels).sum())

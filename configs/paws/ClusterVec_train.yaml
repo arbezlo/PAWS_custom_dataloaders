@@ -1,6 +1,6 @@
 criterion:
   classes_per_batch: 15
-  me_max: true
+  me_max: false
   sharpen: 0.25
   supervised_imgs_per_class: 4
   supervised_views: 1

@@ -33,8 +33,8 @@ meta:
   use_pred_head: true
 optimization:
   epochs: 100
-  final_lr: 0.064
-  lr: 6.4
+  final_lr: 0.0012
+  lr: 1.2
   momentum: 0.9
   nesterov: false
   start_lr: 0.3

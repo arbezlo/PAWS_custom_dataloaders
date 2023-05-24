@@ -46,7 +46,7 @@ parser.add_argument(
     default='')
 parser.add_argument(
     '--split-seed', type=float,
-    default=152,
+    default=155,
     help='seed for labeled data-split')
 parser.add_argument(
     '--device', type=str,
@@ -85,7 +85,8 @@ parser.add_argument(
         'imagenet_subsets/',
         'cifar10_subsets/',
         'clustervec_subsets/',
-        "BRANDS_subsets/"
+        "BRANDS_subsets/",
+        "PRIO_subsets/"
     ])
 
 logging.basicConfig()
@@ -115,7 +116,7 @@ def main(
 ):
     device = torch.device(device_str)
     torch.cuda.set_device(device)
-    num_classes = 151#TODO chaneg to use the global parameter #1000 if 'imagenet' in dataset_name else 10
+    num_classes = 5#TODO chaneg to use the global parameter #1000 if 'imagenet' in dataset_name else 10
 
     def init_pipe(training):
         # -- make data transforms
@@ -209,15 +210,15 @@ def evaluate_embeddings(
         z = encoder(imgs)
         probs = snn(z)
         total += imgs.shape[0]
-        top5_correct += float(probs.topk(5, dim=1).indices.eq(labels.unsqueeze(1)).sum())
+        top5_correct += float(probs.topk(2, dim=1).indices.eq(labels.unsqueeze(1)).sum())
         top1_correct += float(probs.max(dim=1).indices.eq(labels).sum())
         top1_acc = 100. * top1_correct / total
         top5_acc = 100. * top5_correct / total
 
-        if itr % 50 == 0:
+        if itr % 1 == 0:
             logger.info('[%5d/%d] %.3f%% %.3f%%' % (itr, ipe, top1_acc, top5_acc))
 
-    logger.info(f'top1/top5: {top1_acc}/{top5_acc}')
+    logger.info(f'top1/top2: {top1_acc}/{top5_acc}')
 
     return top1_acc, top5_acc
 

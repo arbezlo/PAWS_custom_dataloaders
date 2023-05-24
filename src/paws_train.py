@@ -357,7 +357,10 @@ def main(args,run):
                             'itr':itr,
                             'paws-xent-loss': ploss_meter.avg,
                             'paws-me_max-reg': rloss_meter.avg,
-                            'time (ms)': time_meter.avg
+                            'time (ms)': time_meter.avg,
+                            "lr_avg": lr_stats.avg,
+                            "lr_min": lr_stats.min,
+                            'lr_max': lr_stats.max,
                             })
                 logger.info('[%d, %5d] loss: %.3f (%.3f %.3f) '
                             '(%d ms; %d ms)'
@@ -421,17 +424,18 @@ def load_checkpoint(
 ):
     checkpoint = torch.load(r_path, map_location='cpu')
     epoch = checkpoint['epoch']
+    #print(checkpoint.keys())
     #from pudb import forked; forked.set_trace()
     # -- loading encoder
-    if encoder.model_name == "resnet18":
-        encoder.load_state_dict(checkpoint['state_dict'], strict = False)
-    else:
-        encoder.load_state_dict(checkpoint['encoder'], strict = False)
+    # if encoder.model_name == "resnet18":
+    #     encoder.load_state_dict(checkpoint['state_dict'], strict = False)
+    #else:
+    encoder.load_state_dict(checkpoint['encoder'], strict = False)
     logger.info(f'loaded encoder from epoch {epoch}')
 
     # -- loading optimizer
     if not new:
-        opt.load_state_dict(checkpoint['optimizer'])
+        opt.load_state_dict(checkpoint['opt'])
 
     if use_fp16:
         scaler.load_state_dict(checkpoint['amp'])

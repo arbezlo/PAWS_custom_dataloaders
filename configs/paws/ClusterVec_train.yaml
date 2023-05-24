@@ -2,10 +2,10 @@ criterion:
   classes_per_batch: 5
   me_max: false
   sharpen: 0.25
-  supervised_imgs_per_class: 4
+  supervised_imgs_per_class: 20
   supervised_views: 2
-  temperature: 3.0
-  unsupervised_batch_size: 32
+  temperature: 0.1
+  unsupervised_batch_size: 96
 data:
   color_jitter_strength: 1.0
   data_seed: null
@@ -19,24 +19,24 @@ data:
   unique_classes_per_rank: true
   unlabeled_frac: 0.9
 logging:
-  folder: /scratch2/clear/larbez/Workspace/PAWS/Prio_ft_from_imagnet_continue/
+  folder: /scratch2/clear/larbez/Workspace/PAWS/Prio_from_scratch_resnet18_10percent_predhead_continue/
   write_tag: paws
 meta:
   copy_data: false
   device: cuda:0
   load_checkpoint: true
-  model_name: resnet50
-  output_dim: 2048
-  read_checkpoint: /scratch2/clear/larbez/Workspace/PAWS/pretrained_weights_paws/paws_imgnt_10percent_300ep.pth.tar #/scratch2/clear/larbez/Workspace/iaflash/resnet18_256_False_50percent_freeze=False/model_best.pth.tar #/scratch2/clear/larbez/Workspace/PAWS/clustervec_ft_from_old/old/model_best.pth.tar    
+  model_name: resnet18
+  output_dim: 512
+  read_checkpoint: /scratch2/clear/larbez/Workspace/PAWS/Prio_from_scratch_resnet18_10percent_predhead/paws-best.pth.tar #/scratch2/clear/larbez/Workspace/PAWS/pretrained_weights_paws/paws_imgnt_10percent_300ep.pth.tar #/scratch2/clear/larbez/Workspace/iaflash/resnet18_256_False_50percent_freeze=False/model_best.pth.tar #/scratch2/clear/larbez/Workspace/PAWS/clustervec_ft_from_old/old/model_best.pth.tar    
   use_fp16: false
-  use_pred_head: false
+  use_pred_head: true
 optimization:
-  new_opt: true
-  epochs: 600
-  final_lr: 7.0e-05
-  lr: 0.007
+  new_opt: false
+  epochs: 300
+  final_lr: 0.012
+  lr: 1.2
   momentum: 0.9
   nesterov: false
-  start_lr: 0.3
+  start_lr: 2.3
   warmup: 10
   weight_decay: 1.0e-06

@@ -1,6 +1,7 @@
 conda activate paws
 export PYTHONPATH='/home/larbez/Documents/suncet/'
 source gpu_setVisibleDevices.sh
+echo CUDA_VISIBLE_DEVICES
 GPUID=0
 cd /home/larbez/Documents/suncet/
 

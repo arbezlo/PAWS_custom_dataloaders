@@ -73,9 +73,8 @@ parser.add_argument(
     default='imagenet_fine_tune',
     help='name of dataset to evaluate on',
     choices=[
-        'imagenet_fine_tune',
-        'cifar10_fine_tune',
-        'clustervec_fine_tune'
+        'ImageFolder_fine_tune',
+        'datasetcsv_fine_tune'
     ])
 parser.add_argument(
     '--subset-path', type=str,

@@ -1,6 +1,6 @@
 data:
   data_seed: 152
-  dataset: clustervec_fine_tune
+  dataset: datasetcsv_fine_tune
   image_folder: anonym2open/
   normalize: true
   num_classes: 151
@@ -8,11 +8,13 @@ data:
   subset_path: /scratch2/clear/larbez/Workspace/datasets/clustervec-small/subsets
   unlabeled_frac: 0.9
 logging:
-  folder: /scratch2/clear/larbez/Workspace/PAWS/Test_new_dataloaders_bisbis/
+  folder: /scratch2/clear/larbez/Workspace/PAWS/Test_new_dataloaders_bisbisAAA/
   pretrain_path: /scratch2/clear/larbez/Workspace/PAWS/pretrained_weights_paws/paws_imgnt_10percent_300ep.pth.tar
   write_tag: paws-latest
+  val_period: 5
 meta:
   copy_data: false
+  num_workers: 7
   device: cuda:0
   load_checkpoint: false
   master_port: 4029
@@ -22,6 +24,7 @@ meta:
 optimization:
   epochs: 300
   lr: 0.02
+  batch_size: 128
   use_lars: false
   weight_decay: 0.0
   zero_init: false

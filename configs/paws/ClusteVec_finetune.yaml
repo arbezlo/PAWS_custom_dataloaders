@@ -1,37 +1,27 @@
-criterion:
-  classes_per_batch: 50
-  supervised_views: 1
-  supervised_batch_size: 2
-  temperature: 0.1
 data:
-  data_seed: 152
+  data_seed: 155
   dataset: clustervec_fine_tune
-  image_folder: split_70-30/
-  label_smoothing: 0.0
+  image_folder: split_ls/
   normalize: true
-  root_path: /scratch2/clear/larbez/Workspace/datasets/CLIP/
-  subset_path: clustervec_subsets/
-  unique_classes_per_rank: true
-  unlabeled_frac: 0.9
+  num_classes: 5
+  root_path: /scratch2/clear/larbez/Workspace/datasets/Prioritaires_cropped/
+  subset_path: PRIO_subsets/
+  unlabeled_frac: 0.97
 logging:
-  folder: /scratch2/clear/larbez/Workspace/PAWS/fine_tune_clustervec01/
-  pretrain_path: /scratch2/clear/larbez/Workspace/PAWS/clustervec_/paws-latest.pth.tar
-  write_tag: paws-latest-SNN
+  folder: /scratch2/clear/larbez/Workspace/PAWS/Prio_ft_really_from_scratch_3percent/
+  pretrain_path: /scratch2/clear/larbez/Workspace/PAWS/Prio_from_scratch_really_3percent_predhead/paws-best.pth.tar
+  write_tag: paws-latest
 meta:
-  copy_data: true
+  copy_data: false
   device: cuda:0
   load_checkpoint: false
-  model_name: resnet18
-  output_dim: 512
-  use_pred_head: false
-  use_fp16: false #true #False
+  master_port: 4029
+  model_name: resnet50
+  training: true
+  use_fp16: false
 optimization:
-  epochs: 30
-  final_lr: 0.0001
-  lr: 0.01
-  momentum: 0.9
-  nesterov: false
-  start_lr: 0.1
-  use_lars: true
-  warmup: 0
+  epochs: 100
+  lr: 0.002
+  use_lars: false
   weight_decay: 0.0
+  zero_init: true

@@ -5,3 +5,5 @@ datasets
 *.pdf
 *.ipynb
 *.yaml
+*.sh
+configs/paws/

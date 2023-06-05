@@ -80,13 +80,8 @@ parser.add_argument(
 parser.add_argument(
     '--subset-path', type=str,
     default='imagenet_subsets/',
-    help='name of dataset to evaluate on',
-    choices=[
-        'imagenet_subsets/',
-        'cifar10_subsets/',
-        'clustervec_subsets/',
-        "BRANDS_subsets/"
-    ])
+    help='name of dataset to evaluate on'
+   )
 
 logging.basicConfig()
 logger = logging.getLogger()
@@ -133,6 +128,7 @@ def main(
         (data_loader,
          data_sampler) = init_data(
             dataset_name=dataset_name,
+            subset_path=subset_path,
             transform=transform,
             init_transform=init_transform,
             u_batch_size=None,

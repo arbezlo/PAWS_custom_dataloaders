@@ -22,7 +22,7 @@ import sys
 import copy
 
 from collections import OrderedDict
-
+import time
 import numpy as np
 
 import torch
@@ -63,6 +63,7 @@ def main(args,run):
     port = args['meta']['master_port']
     load_checkpoint = args['meta']['load_checkpoint']
     training = args['meta']['training']
+    num_workers = args['meta']['num_workers'] 
     copy_data = args['meta']['copy_data']
     use_fp16 = args['meta']['use_fp16']
     device = torch.device(args['meta']['device'])
@@ -87,11 +88,13 @@ def main(args,run):
     use_lars = args['optimization']['use_lars']
     zero_init = args['optimization']['zero_init']
     num_epochs = args['optimization']['epochs']
+    batch_size = args['optimization']['batch_size']
 
     # -- LOGGING
     folder = args['logging']['folder']
     tag = args['logging']['write_tag']
     r_file_enc = args['logging']['pretrain_path']
+    val_period = args['logging']['val_period']
 
     # -- log/checkpointing paths
     r_enc_path = os.path.join(folder, r_file_enc)
@@ -102,9 +105,7 @@ def main(args,run):
     logger.info(f'initialized rank/world-size: {rank}/{world_size}')
 
     # -- optimization/evaluation params
-    if training:
-        batch_size = 64
-    else:
+    if not training:
         batch_size = 16
         unlabeled_frac = 0.0
         load_checkpoint = True
@@ -137,6 +138,7 @@ def main(args,run):
          root_path=root_path,
          image_folder=image_folder,
          training=training,
+         num_workers = num_workers,
          copy_data=copy_data)
 
     ipe = len(data_loader)
@@ -204,7 +206,7 @@ def main(args,run):
         logger.info(sum(p.numel() for n, p in encoder.named_parameters()
                         if p.requires_grad and ('fc' not in n)))
         start_epoch = 0
-
+    best_acc = 0
     for epoch in range(start_epoch, num_epochs):
 
         def train_step():
@@ -255,24 +257,31 @@ def main(args,run):
             logger.info('[%d, %5d] %.3f%%' % (epoch + 1, i, top1_acc))
             return 100. * top1_correct / total, 100. * top5_correct / total
 
+        log_str = 'train:' if training else 'test:'
         train_top1 = 0.
         train_top1 = train_step()
-        with torch.no_grad():
-            val_top1, val_top5 = val_step()
+        
+        if epoch % int(val_period) == 0:
+            with torch.no_grad():
+                val_top1, val_top5 = val_step()
+            
+            logger.info('[%d] (%s: %.3f%%) (val: %.3f%%)'
+                        % (epoch + 1, log_str, train_top1, val_top1))
+            
+            best_acc = val_top1 if val_top1 > best_acc else best_acc
 
-        log_str = 'train:' if training else 'test:'
-        logger.info('[%d] (%s: %.3f%%) (val: %.3f%%)'
-                    % (epoch + 1, log_str, train_top1, val_top1))
+            run.log({
+                "epoch":epoch+1,
+                "val_top1":val_top1,
+                "val_top5":val_top5
+            })
         if run is not None:
             run.log({
                     "epoch":epoch+1,
-                    "train_top1":train_top1,
-                    "val_top1":val_top1,
-                    "val_top5":val_top5
+                    "train_top1":train_top1      
                     })
         # -- logging/checkpointing
-        if training and (rank == 0) and ((best_acc is None)
-                                         or (best_acc < val_top1)):
+        if training and (rank == 0) and epoch % int(val_period) == 0:
             best_acc = val_top1
             save_dict = {
                 'encoder': encoder.state_dict(),
@@ -287,7 +296,7 @@ def main(args,run):
                 'amp': scaler.state_dict()
             }
             torch.save(save_dict, w_enc_path)
-
+        time.sleep(60)
     return train_top1, val_top1
 
 

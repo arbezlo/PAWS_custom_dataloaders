@@ -49,6 +49,7 @@ def init_data(
     training=True,
     copy_data=False,
     stratify=False,
+    num_workers = 8,
     drop_last=True
 ):
     """
@@ -154,6 +155,7 @@ def init_data(
             root_path=root_path,
             image_folder=image_folder,
             training=training,
+            num_workers = num_workers,
             copy_data=copy_data)
 
     elif dataset_name == 'clustervec_fine_tune':
@@ -172,6 +174,7 @@ def init_data(
             image_folder=image_folder,
             training=training,
             drop_last=drop_last,
+            num_workers = num_workers,
             copy_data=copy_data)
 
 
@@ -457,7 +460,8 @@ def _init_clustervec_ft_data(
     copy_data=False,
     drop_last=True,
     tar_folder='imagenet_full_size/',
-    tar_file='imagenet_full_size-061417.tar',
+    num_workers = 8,
+    tar_file='imagenet_full_size-061417.tar'
 ):
     imagenet = ClusterVec(
         root=root_path,
@@ -487,7 +491,7 @@ def _init_clustervec_ft_data(
             batch_size=batch_size,
             drop_last=drop_last,
             pin_memory=True,
-            num_workers=7)
+            num_workers=num_workers)
     else:
         dist_sampler = ClassStratifiedSampler(
             data_source=dataset,
@@ -501,7 +505,7 @@ def _init_clustervec_ft_data(
             dataset,
             batch_sampler=dist_sampler,
             pin_memory=True,
-            num_workers=7)
+            num_workers=num_workers)
 
     return (data_loader, dist_sampler)
 
@@ -523,6 +527,7 @@ def _init_clustervec_data(
     training=True,
     copy_data=False,
     tar_folder='imagenet_full_size/',
+    num_workers = 8,
     tar_file='imagenet_full_size-061417.tar'
 ):
     clustervec = ClusterVec(
@@ -552,7 +557,7 @@ def _init_clustervec_data(
         batch_size=u_batch_size,
         drop_last=True,
         pin_memory=True,
-        num_workers=7)#changed_numworkers
+        num_workers=num_workers)#changed_numworkers
     logger.info('ClusterVec unsupervised data loader created')
     #forked.set_trace()
     supervised_sampler, supervised_loader = None, None

@@ -80,8 +80,13 @@ parser.add_argument(
 parser.add_argument(
     '--subset-path', type=str,
     default='imagenet_subsets/',
-    help='name of dataset to evaluate on'
+    help='path to the csv folder'
    )
+parser.add_argument(
+    '--num_workers', type=str,
+    help='Number of workers used by the dataloaders'
+   )
+
 
 logging.basicConfig()
 logger = logging.getLogger()
@@ -106,11 +111,13 @@ def main(
     use_pred=True,
     normalize=True,
     device_str='cuda:0',
-    split_seed=152
+    split_seed=152, 
+    num_workers = 7,
+    num_classes = 151
 ):
     device = torch.device(device_str)
     torch.cuda.set_device(device)
-    num_classes = 151#TODO chaneg to use the global parameter #1000 if 'imagenet' in dataset_name else 10
+    #TODO chaneg to use the global parameter #1000 if 'imagenet' in dataset_name else 10
 
     def init_pipe(training):
         # -- make data transforms
@@ -141,6 +148,7 @@ def main(
             image_folder=image_folder,
             training=training,
             copy_data=False,
+            num_workers = int(num_workers), 
             drop_last=False)
 
         return transform, init_transform, data_loader, data_sampler
@@ -156,6 +164,9 @@ def main(
     encoder.eval()
 
     transform, init_transform, data_loader, data_sampler = init_pipe(True)
+
+    num_classes = len(data_loader.dataset.classes)
+
     embs, labs = make_embeddings(
         device,
         data_loader,
@@ -343,4 +354,5 @@ if __name__ == '__main__':
          use_pred=args.use_pred,
          normalize=args.normalize,
          device_str=args.device,
+         num_workers = args.num_workers,
          split_seed=args.split_seed)

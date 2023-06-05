@@ -79,6 +79,7 @@ def main(args,run):
     r_file = args['meta']['read_checkpoint']
     copy_data = args['meta']['copy_data']
     use_fp16 = args['meta']['use_fp16']
+    num_workers = args['meta']['num_workers']
     use_pred_head = args['meta']['use_pred_head']
     device = torch.device(args['meta']['device'])
     torch.cuda.set_device(device)
@@ -217,6 +218,7 @@ def main(args,run):
          root_path=root_path,
          image_folder=image_folder,
          training=True,
+         num_workers = num_workers,
          copy_data=copy_data)
     iter_supervised = None
 

@@ -207,12 +207,16 @@ def evaluate_embeddings(
     logger.info(embs.shape)
     logger.info(labs.shape)
     logger.info(len(data_loader))
-
+    list_embs, list_labels = [],[]
     top1_correct, top5_correct, total = 0, 0, 0
     for itr, data in enumerate(data_loader):
         imgs, labels = data[0].to(device), data[1].to(device)
 
         z = encoder(imgs)
+
+        list_embs.append(z.cpu().detach().numpy())
+        list_labels.append(labels.cpu())
+        
         probs = snn(z)
         total += imgs.shape[0]
         top5_correct += float(probs.topk(5, dim=1).indices.eq(labels.unsqueeze(1)).sum())
@@ -224,9 +228,43 @@ def evaluate_embeddings(
             logger.info('[%5d/%d] %.3f%% %.3f%%' % (itr, ipe, top1_acc, top5_acc))
 
     logger.info(f'top1/top5: {top1_acc}/{top5_acc}')
+    
+    plot_TSNE(data_loader.dataset, list_embs, list_labels)
 
     return top1_acc, top5_acc
 
+def plot_TSNE(dataset, liste_encoders, liste_labels):
+    import sklearn.manifold as manifold
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    logger.info('Starting TSNE process')
+    liste_encoders = np.concatenate(liste_encoders)
+    liste_labels = [i.numpy() for i in liste_labels]
+    liste_labels = np.concatenate(liste_labels)
+
+    TSNE = manifold.TSNE(n_components= 2, learning_rate='auto', init='random')
+    Embedded = TSNE.fit_transform(liste_encoders)
+
+    N_clusters = len(dataset.classes)
+    cmap = matplotlib.colors.ListedColormap(plt.get_cmap('nipy_spectral')(np.linspace(0,1,N_clusters))) 
+    label_names = dataset.classes
+    logger.info('Starting ploting')
+    from pudb import set_trace
+    set_trace()
+    
+    fig = plt.figure(figsize=[20,20])
+    ax = plt.axes()#projection="3d")
+    
+    plt.title('TSNE plot of the dataset in the representation space (colors = Class)')
+    for lab in range(N_clusters):
+        indices = np.where(liste_labels == lab)[0]
+        sc = ax.scatter(Embedded[indices,0],Embedded[indices,1],c=np.array(cmap(lab)).reshape(1,4), label = label_names[lab])
+
+   
+    logger.info('Before save')
+    plt.savefig("./TSNE1.jpg")
+    logger.info('Figure saved')
 
 def make_embeddings(
     device,

@@ -4,3 +4,6 @@ datasets
 .*.swp
 *.pdf
 *.ipynb
+Experiments/*
+*.jpg
+*.npy

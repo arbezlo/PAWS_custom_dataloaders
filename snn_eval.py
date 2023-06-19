@@ -161,19 +161,34 @@ def main(
     encoder.eval()
 
     transform, init_transform, data_loader, data_sampler = init_pipe(True)
-    embs, labs = make_embeddings(
+    t_embs, t_labs = make_embeddings(
         device,
         data_loader,
         data_sampler,
         encoder=encoder)
+    plot_TSNE(data_loader.dataset, t_embs, t_labs, "support")
+    np.save("./t_embs",t_embs.numpy())
+    np.save('./t_labs',t_labs.numpy())
+    
+    transform, init_transform, data_loader, data_sampler = init_pipe(False)
+    val_embs, val_labs = make_embeddings(
+        device,
+        data_loader,
+        data_sampler,
+        encoder=encoder)
+    
+    plot_TSNE(data_loader.dataset, val_embs, val_labs, "val")
+
+    np.save("./val_embs",val_embs.numpy())
+    np.save("./val_labs",val_labs.numpy())
 
     transform, init_transform, data_loader, data_sampler = init_pipe(False)
     return evaluate_embeddings(
         device,
         data_loader,
         encoder=encoder,
-        labs=labs,
-        embs=embs,
+        labs=t_labs,
+        embs=t_embs,
         num_classes=num_classes,
         temp=0.1)
 
@@ -196,32 +211,76 @@ def evaluate_embeddings(
     num_classes = num_classes
     labs = labs.long().view(-1, 1)
     labs = torch.full((labs.size()[0], num_classes), 0., device=device).scatter_(1, labs, 1.)
-
+    
     snn = make_snn(embs, labs, temp)
 
-    logger.info(embs.shape)
-    logger.info(labs.shape)
-    logger.info(len(data_loader))
-
+    list_probs, list_labels = [],[]
     top1_correct, top5_correct, total = 0, 0, 0
     for itr, data in enumerate(data_loader):
         imgs, labels = data[0].to(device), data[1].to(device)
 
         z = encoder(imgs)
+
         probs = snn(z)
+        list_probs.append(probs.cpu().detach().numpy())
+        list_labels.append(labels.cpu().numpy())
         total += imgs.shape[0]
         top5_correct += float(probs.topk(2, dim=1).indices.eq(labels.unsqueeze(1)).sum())
         top1_correct += float(probs.max(dim=1).indices.eq(labels).sum())
         top1_acc = 100. * top1_correct / total
         top5_acc = 100. * top5_correct / total
-
+        
         if itr % 1 == 0:
             logger.info('[%5d/%d] %.3f%% %.3f%%' % (itr, ipe, top1_acc, top5_acc))
+    
+    list_probs = np.concatenate(list_probs)
+    list_labels = np.concatenate(list_labels)
 
+    np.save("./probs_emb",list_probs)
+    np.save("./probs_labs",list_labels)
+
+    plot_TSNE(data_loader.dataset, list_probs, list_labels, "probs")
     logger.info(f'top1/top2: {top1_acc}/{top5_acc}')
 
     return top1_acc, top5_acc
 
+
+
+def plot_TSNE(dataset, liste_encoders, liste_labels, split):
+    import sklearn.manifold as manifold
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    logger.info('Starting TSNE process')
+    
+    #liste_encoders = np.concatenate(liste_encoders)
+    #liste_labels = [i.numpy() for i in liste_labels]
+    #liste_labels = np.concatenate(liste_labels)
+    TSNE = manifold.TSNE(n_components= 2, learning_rate='auto', init='random')
+    Embedded = TSNE.fit_transform(liste_encoders)
+
+    N_clusters = len(dataset.classes)
+    cmap = matplotlib.colors.ListedColormap(plt.get_cmap('nipy_spectral')(np.linspace(0,1,N_clusters))) 
+    label_names = dataset.classes
+    logger.info('Starting ploting')
+
+    
+    fig = plt.figure(figsize=[20,20])
+    ax = plt.axes()#projection="3d")
+    
+    plt.title(f'TSNE plot of the {split} dataset in the representation space (colors = Class)')
+    for lab in range(N_clusters):
+        indices = np.where(liste_labels == lab)[0]
+        sc = ax.scatter(Embedded[indices,0],Embedded[indices,1],c=np.array(cmap(lab)).reshape(1,4), label = label_names[lab])
+
+    annot = ax.annotate("", xy=(0,0), xytext=(20,20),textcoords="offset points",
+                    bbox=dict(boxstyle="round", fc="w"),
+                    arrowprops=dict(arrowstyle="->"))
+    annot.set_visible(False)
+    ax.legend(fontsize='large', markerscale=2)
+    logger.info('Before save')
+    plt.savefig(f"./TSNE{split}.jpg")
+    logger.info('Figure saved')
 
 def make_embeddings(
     device,
@@ -260,6 +319,8 @@ def make_snn(embs, labs, temp=0.1):
     def snn(h, h_train=embs, h_labs=labs):
         # -- normalize embeddings
         h = h.div(h.norm(dim=1).unsqueeze(1))
+        print(softmax(h @ h_train.T / temp).shape)
+        print(h_labs.shape)
         return softmax(h @ h_train.T / temp) @ h_labs
 
     return snn
